@@ -1,121 +1,95 @@
-import { useState, useEffect, useRef } from "react";
-import { getGeminiResponse } from "../gemini";
+// src/Components/TherapyChatbot.jsx
+import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 import MessageBubble from "./MessageBubble";
-import TypingIndicator from "./TypingIndicator";
 import MessageInput from "./MessageInput";
-import { welcomeMessage } from "../utils/constants";
+import TypingIndicator from "./TypingIndicator";
+import { getGeminiResponse } from "../gemini";
 
-export default function TherapyChatbot() {
-  const [messages, setMessages] = useState([]);
-  const [isTyping, setIsTyping] = useState(false);
-  const messagesEndRef = useRef(null);
+// ✅ lowercase import to match your file
+import { WELCOME_MESSAGE, ERROR_MESSAGE } from "../utils/Constants";
+i
 
-  // Initialize messages from localStorage
-  useEffect(() => {
-    const savedMessages = localStorage.getItem("therapy-chat-messages");
-    if (savedMessages) {
-      try {
-        const parsed = JSON.parse(savedMessages);
-        if (parsed.length > 0) setMessages(parsed);
-        else setMessages([welcomeMessage]);
-      } catch {
-        setMessages([welcomeMessage]);
-      }
-    } else {
-      setMessages([welcomeMessage]);
-    }
-  }, []);
+const TherapyChatbot = () => {
+  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
+  const [loading, setLoading] = useState(false);
 
-  // Save messages to localStorage
-  useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem("therapy-chat-messages", JSON.stringify(messages));
-    }
-  }, [messages]);
+  const handleSend = async (text) => {
+    if (!text.trim()) return;
 
-  // Auto scroll
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
-
-  const handleSendMessage = async (text) => {
-    const userMsg = {
+    const newMessage = {
       id: Date.now(),
       text,
       isUser: true,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
     };
-    setMessages((prev) => [...prev, userMsg]);
-    setIsTyping(true);
 
-    // Updated Gemini prompt for calm, empathetic tone
-    const systemPrompt = `
-You are a kind, calm, and empathetic assistant.
-When the user expresses emotions, respond with warmth and reassurance.
-Avoid being overly analytical or technical.
-Focus on listening and comforting the user.
-Keep responses short and soothing.
-`;
+    setMessages((prev) => [...prev, newMessage]);
+    setLoading(true);
 
     try {
-      const response = await getGeminiResponse(text, systemPrompt);
-      const aiMsg = {
-        id: Date.now() + Math.floor(Math.random() * 1000),
+      const response = await getGeminiResponse(text);
+
+      const botMessage = {
+        id: Date.now() + 1,
         text: response,
         isUser: false,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
       };
-      setMessages((prev) => [...prev, aiMsg]);
-    } catch {
-      const errorMsg = {
-        id: Date.now() + Math.floor(Math.random() * 1000),
-        text: "I'm sorry, I'm having trouble connecting right now. Please try again later.",
+
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (err) {
+      console.error(err);
+
+      const errorMessage = {
+        id: Date.now() + 2,
+        text: ERROR_MESSAGE,
         isUser: false,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        timestamp: new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
       };
-      setMessages((prev) => [...prev, errorMsg]);
+
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
-      setIsTyping(false);
+      setLoading(false);
     }
   };
 
-  const clearChat = () => {
-    setMessages([welcomeMessage]);
-    localStorage.removeItem("therapy-chat-messages");
-  };
-
   return (
-    <div className="flex flex-col h-screen max-w-4xl mx-auto bg-gray-50">
+    <div className="flex flex-col h-screen bg-gray-100">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-800">Therapy Chat</h1>
-          <p className="text-sm text-gray-500">Your safe space to talk</p>
-        </div>
-        <button
-          onClick={clearChat}
-          className="text-gray-500 hover:text-gray-700 px-3 py-1 text-sm rounded-md hover:bg-gray-100 transition-colors"
-        >
-          New Chat
-        </button>
-      </div>
+      <header className="bg-blue-600 text-white p-4 shadow-md">
+        <h1 className="text-xl font-bold">Therapy Chatbot</h1>
+      </header>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-1">
+      {/* Chat Messages */}
+      <main className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.map((msg) => (
-          <MessageBubble
-            key={msg.id}
-            message={msg.text}
-            isUser={msg.isUser}
-            timestamp={msg.timestamp}
-          />
+          <MessageBubble key={msg.id} message={msg} isUser={msg.isUser}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {msg.text}
+            </ReactMarkdown>
+          </MessageBubble>
         ))}
-        {isTyping && <TypingIndicator />}
-        <div ref={messagesEndRef} />
-      </div>
+        {loading && <TypingIndicator />}
+      </main>
 
       {/* Input */}
-      <MessageInput onSendMessage={handleSendMessage} disabled={isTyping} />
+      <footer className="p-4 bg-white border-t">
+        <MessageInput onSend={handleSend} />
+      </footer>
     </div>
   );
-}
+};
+
+export default TherapyChatbot;
