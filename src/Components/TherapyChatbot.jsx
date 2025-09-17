@@ -1,7 +1,6 @@
 // src/Components/TherapyChatbot.jsx
 import { useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { useTheme } from "../contexts/ThemeContext";
 
 import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
@@ -10,11 +9,11 @@ import { getGeminiResponse } from "../gemini";
 
 // ✅ lowercase import to match your file
 import { WELCOME_MESSAGE, ERROR_MESSAGE } from "../utils/Constants";
-i
 
 const TherapyChatbot = () => {
   const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [loading, setLoading] = useState(false);
+  const { isDark } = useTheme();
 
   const handleSend = async (text) => {
     if (!text.trim()) return;
@@ -66,28 +65,27 @@ const TherapyChatbot = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
-      {/* Header */}
-      <header className="bg-blue-600 text-white p-4 shadow-md">
-        <h1 className="text-xl font-bold">Therapy Chatbot</h1>
-      </header>
-
+    <div className="h-screen flex flex-col">
       {/* Chat Messages */}
-      <main className="flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} isUser={msg.isUser}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {msg.text}
-            </ReactMarkdown>
-          </MessageBubble>
-        ))}
-        {loading && <TypingIndicator />}
-      </main>
+      <div className="flex-1 overflow-y-auto px-4 py-4 md:px-6 md:py-8 pb-32 md:pb-8">
+        <div className="max-w-4xl mx-auto space-y-4 md:space-y-6">
+          {messages.map((msg) => (
+            <MessageBubble key={msg.id} message={msg} isUser={msg.isUser} />
+          ))}
+          {loading && <TypingIndicator />}
+        </div>
+      </div>
 
-      {/* Input */}
-      <footer className="p-4 bg-white border-t">
-        <MessageInput onSend={handleSend} />
-      </footer>
+      {/* Input - Fixed at bottom */}
+      <div className={`fixed bottom-20 left-0 right-0 backdrop-blur-xl border-t px-4 py-3 md:bottom-0 md:px-6 md:py-4 z-40 ${
+        isDark 
+          ? 'bg-gray-900/95 border-gray-700' 
+          : 'bg-white/95 border-gray-200/50'
+      }`}>
+        <div className="max-w-4xl mx-auto">
+          <MessageInput onSend={handleSend} />
+        </div>
+      </div>
     </div>
   );
 };
