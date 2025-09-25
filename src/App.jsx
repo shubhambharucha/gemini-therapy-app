@@ -2,9 +2,7 @@
 import { useState } from 'react';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import TherapyChatbot from './Components/TherapyChatbot';
-import MoodTracker from './Components/MoodTracker';
-import SessionNotes from './Components/SessionNotes';
-import ThemedSessions from './Components/ThemedSessions';
+import MoodCheckin from './Components/MoodCheckin';
 import Journal from './Components/Journal';
 import Navigation from './Components/Navigation';
 import './index.css';
@@ -18,11 +16,7 @@ function AppContent() {
       case 'chat':
         return <TherapyChatbot />;
       case 'mood':
-        return <MoodTracker />;
-      case 'notes':
-        return <SessionNotes />;
-      case 'themes':
-        return <ThemedSessions />;
+        return <MoodCheckin />;
       case 'journal':
         return <Journal />;
       default:
@@ -32,10 +26,10 @@ function AppContent() {
 
   return (
     <div className={`min-h-screen transition-colors duration-200 ${
-      isDark ? 'bg-gray-900' : 'bg-gray-50/50'
+      isDark ? 'bg-gray-900' : 'bg-gray-50'
     }`}>
       <Navigation activeTab={activeTab} setActiveTab={setActiveTab} />
-      <main className="pb-20 md:pb-8">
+      <main className={`${activeTab === 'chat' ? 'pt-0 md:pt-20' : 'pt-0 md:pt-20'} pb-20 md:pb-8`}>
         {renderActiveComponent()}
       </main>
     </div>
